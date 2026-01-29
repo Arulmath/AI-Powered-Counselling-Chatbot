@@ -1,0 +1,117 @@
+/* ========== 1. THEME ========== */
+:root{
+  --c1:#ff5fa3;          /* hot‑pink */
+  --c2:#ff9bb4;          /* light‑pink */
+  --c3:#7c6cff;          /* violet */
+  --page:#edf2fa;        /* page bg   */
+  --txt:#222;
+  --glass-bg:rgba(255,255,255,0.18);
+  --blur:22px;
+  --rad:18px;
+  --shadow:0 10px 28px rgba(0,0,0,.12);
+  --shadow-hov:0 18px 46px rgba(0,0,0,.16);
+  --time:.45s cubic-bezier(.16,1,.3,1);
+}
+
+/* ========== 2. RESET & BASE ========== */
+*,
+*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',sans-serif;
+  background:var(--page);
+  color:var(--txt);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ========== 3. WRAPPER & HEADING ========== */
+.mypacks-wrapper{
+ /* max-width:1200px;
+  margin:0 auto;
+  padding:48px 24px;*/
+  max-width: 1100px;
+    margin: 0 auto;
+    padding: -6px 24px
+}
+.mypacks-wrapper > h2{
+  /*margin-bottom:40px;*/
+  margin-bottom: 24px;
+  font-size:30px;
+  font-weight:700;
+  text-align:center;
+}
+
+/* ========== 4. GRID (exact 3 per row) ========== */
+.grid-container{
+  display:grid;
+  gap:28px;
+  grid-template-columns:repeat(3,1fr); /* always 3 on ≥640px */
+}
+@media(max-width:640px){
+  .grid-container{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:420px){
+  .grid-container{grid-template-columns:1fr;}
+}
+
+/* ========== 5. CARD ========== */
+.card{
+  height:240px;
+  position:relative;
+  padding:1.6rem;
+  border-radius:var(--rad);
+  background:var(--glass-bg);
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  cursor:pointer;
+  transition:transform var(--time),box-shadow var(--time);
+  transform-style:preserve-3d;
+}
+
+/* gradient film */
+.card::before{
+  content:"";
+  position:absolute;inset:-1px;
+  border-radius:inherit;
+  background:linear-gradient(135deg,var(--c1),var(--c2) 40%,var(--c3) 80%);
+  mix-blend-mode:overlay;
+  opacity:.55;
+  pointer-events:none;
+  transition:opacity var(--time);
+}
+
+/* blurred blob decoration */
+.card::after{
+  content:"";
+  position:absolute;
+  width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle,var(--c2),transparent 70%);
+  top:-50px;left:-40px;
+  filter:blur(10px);
+  opacity:.25;
+  pointer-events:none;
+}
+
+/* HOVER  – subtle tilt + glow */
+.card:hover{
+  transform:perspective(800px) rotateX(6deg) rotateY(-5deg) scale(1.04);
+  box-shadow:var(--shadow-hov);
+}
+.card:hover::before{opacity:.85}
+
+/* ========== 6. CONTENT ========== */
+.card-content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:space-between}
+
+.card h3{
+  font-size:1.2rem;font-weight:600;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.card span{
+  align-self:flex-start;
+  padding:6px 14px;
+  font-size:.75rem;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;
+  border-radius:9999px;
+  background:rgba(255,255,255,.28);
+  color:#fff;
+  backdrop-filter:blur(8px);
+}

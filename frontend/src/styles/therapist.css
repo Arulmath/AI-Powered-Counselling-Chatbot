@@ -1,0 +1,111 @@
+/* 🌸 General Page Styling */
+.therapist-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #fdfbfb, #ebedee);
+    padding: 20px;
+  }
+  
+  /* 📝 Chat Box */
+  .chat-box {
+    width: 90%;
+    max-width: 600px;
+    height: 500px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* 🎤 Chat Messages */
+  .message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+  }
+  
+  .user-message {
+    background: #ff69b4; /* Soft pink */
+    color: white;
+    padding: 12px;
+    border-radius: 15px;
+    max-width: 75%;
+    align-self: flex-end;
+    text-align: left;
+  }
+  
+  .bot-message {
+    background: #f0f0f0;
+    color: #333;
+    padding: 12px;
+    border-radius: 15px;
+    max-width: 75%;
+    align-self: flex-start;
+    text-align: left;
+  }
+  
+  /* 📥 Input & Buttons */
+  .chat-input-container {
+    width: 90%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .chat-input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ff69b4;
+    border-radius: 25px;
+    font-size: 16px;
+    outline: none;
+  }
+  
+  .chat-button {
+    padding: 12px 18px;
+    background: #ff69b4;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .chat-button:hover {
+    background: #ff85c2;
+    transform: scale(1.05);
+  }
+  
+  /* 🎤 Voice Button */
+  .voice-button {
+    background: #007bff;
+    color: white;
+  }
+  
+  .voice-button:hover {
+    background: #0056b3;
+  }
+  
+  /* 📱 Responsive Design */
+  @media (max-width: 768px) {
+    .chat-box {
+      height: 400px;
+    }
+  
+    .chat-input-container {
+      flex-direction: column;
+    }
+  
+    .chat-button {
+      width: 100%;
+    }
+  }
+  

@@ -1,0 +1,95 @@
+.navbar {
+  background-color:#c72b6ecf; /* Deep purple for contrast */
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px auto;
+  border-radius: 16px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  font-family: 'Poppins', sans-serif;
+  position: sticky;
+  top: 10px;
+  z-index: 999;
+  animation: slideDown 0.6s ease-in-out;
+  
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar a {
+  color: #62063c;
+  font-weight: 800;
+  font-size: 20px;
+  text-decoration: none; /* Removes underline */
+  margin: 0 14px;
+  padding: 10px 16px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+
+/*.navbar a::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background-color: #ff66b2;
+  transition: 0.3s ease;
+}
+*/
+.navbar a:hover {
+  color: white;
+  background-color: #800080;
+}
+
+.navbar a:hover::after {
+  width: 100%;
+}
+
+.navbar button {
+  background: linear-gradient(to right, #ff66a3, #ff3385);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 20px;
+  box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);
+  transition: all 0.3s ease-in-out;
+}
+
+.navbar button:hover {
+  background: #ff007a;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px #ff4da6;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .navbar a,
+  .navbar button {
+    margin: 10px 0;
+  }
+}
+
