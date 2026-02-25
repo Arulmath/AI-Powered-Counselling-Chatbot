@@ -7,7 +7,6 @@ openai
 pyttsx3
 SpeechRecognition
 cryptography
-python-3.10.13
-numpy
 gunicorn
+python-dotenv
 
