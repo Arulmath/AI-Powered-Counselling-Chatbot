@@ -4,58 +4,60 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 import mysql.connector
 import bcrypt
 import openai
-#from openai import OpenAI
 import pyttsx3
 import speech_recognition as sr
 from cryptography.fernet import Fernet
-from dotenv import load_dotenv
-from auth import auth  # 👈 Import the auth blueprint\
-from sentence_transformers import SentenceTransformer
+from auth import auth
 from sklearn.metrics.pairwise import cosine_similarity
-import speech_recognition as sr
-import pyttsx3
 import json
 import numpy as np
 import os
+import hashlib
+from datetime import datetime
 from dotenv import load_dotenv
 
-load_dotenv()  # loads .env file
+load_dotenv()
 
-openai.api_key = os.getenv("openai.api_key")
+# ==============================
+# OpenAI API Key (Render ENV)
+# ==============================
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-
-# Register blueprint
-
-# 🔹 Initialize Flask App
+# ==============================
+# Flask App
+# ==============================
 app = Flask(__name__)
-#CORS(app, resources={r"/auth/*": {"origins": "http://localhost:3000"}})
-#CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+
 CORS(app, origins=[
     "http://localhost:3000",
-    "https://your-frontend.vercel.app"
+    "https://ai-powered-counselling-chatbot.vercel.app"
 ])
 
-# 🔹 JWT Configuration
-app.config["JWT_SECRET_KEY"] = "your_secret_key"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600  # Token expires in 1 hour
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super_secret_key")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600
 jwt = JWTManager(app)
 
-# 🔹 Function to Get a Fresh Database Connection
+# ==============================
+# Database Connection (Railway)
+# ==============================
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root",
-        database="voice_chatbot_db"
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT"))
     )
 
-# 🔹 Encryption Key (Should be securely stored, NOT hardcoded)
-#key = Fernet.generate_key() 
-#print(key)# Save this key securely
-key=b'WQj123SRuTWSIrSFravU77MtlwGaATRz_A6R_3rN9qY='
+# ==============================
+# Encryption Key
+# ==============================
+key = b'WQj123SRuTWSIrSFravU77MtlwGaATRz_A6R_3rN9qY='
 cipher_suite = Fernet(key)
 
-# 🔹 AI Therapist Responses
+# ==============================
+# Predefined Responses
+# ==============================
 predefined_responses = {
     "hello": "Hi Arulmathi! How can I assist you today?",
     "how are you": "I'm an AI, but I'm always ready to help!",
@@ -64,112 +66,15 @@ predefined_responses = {
     "exit": "Goodbye! Stay strong!"
 }
 
-def generate_response(user_input):
-    return predefined_responses.get(user_input, "I'm here to help! Please ask anything.")
-
-
-import hashlib
-
-# Hashing Function for Email/Username
+# ==============================
+# Hash Function
+# ==============================
 def hash_text(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
-
-@app.route("/auth/signup", methods=["POST"])
-def signup():
-    data = request.json
-    username = data["username"]
-    email = data["email"]
-    password = bcrypt.hashpw(data["password"].encode(), bcrypt.gensalt()).decode()
-
-    # Hash username and email
-    hashed_username = hash_text(username)
-    hashed_email = hash_text(email)
-
-    db = get_db_connection()
-    cursor = db.cursor()
-
-    # Check if user already exists
-    cursor.execute("SELECT * FROM users WHERE email = %s OR username = %s", 
-                   (hashed_email, hashed_username))
-    existing_user = cursor.fetchone()
-
-    if existing_user:
-        return jsonify({"error": "User already exists!"}), 409
-
-    # Insert new user
-    cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", 
-                   (hashed_username, hashed_email, password))
-    db.commit()
-
-    cursor.close()
-    db.close()
-
-    return jsonify({"message": "Signup successful!"}), 201
-
-@app.route("/auth/login", methods=["POST"])
-def login():
-    data = request.json
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-
-    if not email and not username:
-        return jsonify({"error": "Email or Username is required!"}), 400
-
-    db = get_db_connection()
-    cursor = db.cursor()
-
-    try:
-        hashed_email = hash_text(email) if email else None
-        hashed_username = hash_text(username) if username else None
-
-        if email:
-            cursor.execute("SELECT * FROM users WHERE email = %s", (hashed_email,))
-        elif username:
-            cursor.execute("SELECT * FROM users WHERE username = %s", (hashed_username,))
-        else:
-            return jsonify({"error": "Invalid credentials!"}), 401
-
-        user = cursor.fetchone()
-        print("User fetched:", user)
-
-        if not user:
-            return jsonify({"error": "User not found!"}), 404
-
-        stored_password = user[3]
-        print("Stored password:", stored_password)
-
-        if not bcrypt.checkpw(password.encode(), stored_password.encode()):
-            return jsonify({"error": "Invalid password!"}), 401
-
-        identity = email if email else username
-
-       
-        if isinstance(identity, bytes):
-            identity = identity.decode()
-
-        access_token = create_access_token(identity=identity)
-
-      
-        if isinstance(access_token, bytes):
-            access_token = access_token.decode()
-            print("Type of identity:", type(identity))
-            print("Type of access_token:", type(access_token))
-
-
-        return jsonify({"message": "Login successful!", "access_token": access_token}), 200
-
-    except Exception as e:
-        print("Error during login:", e)
-        return jsonify({"error": "Server error", "details": str(e)}), 500
-
-    finally:
-        cursor.close()
-        db.close()
-
-
-
+# ==============================
+# Load Multimedia Dataset
+# ==============================
 def load_multimedia_data(filepath):
     multimedia_data = []
     try:
@@ -180,170 +85,148 @@ def load_multimedia_data(filepath):
         print(f"Error loading file: {e}")
     return multimedia_data
 
+multimedia_data = load_multimedia_data("new_dataset.jsonl")
 
-def prepare_embeddings(multimedia_data, model):
-    questions = [entry["messages"][0]["content"] for entry in multimedia_data]
-    embeddings = model.encode(questions)
-    return embeddings
+# ==============================
+# Signup
+# ==============================
+@app.route("/auth/signup", methods=["POST"])
+def signup():
+    data = request.json
+    username = data["username"]
+    email = data["email"]
+    password = bcrypt.hashpw(data["password"].encode(), bcrypt.gensalt()).decode()
 
+    hashed_username = hash_text(username)
+    hashed_email = hash_text(email)
 
-def find_best_multimedia_match(user_input, multimedia_data, embeddings, model):
-    user_embedding = model.encode([user_input])
-    similarities = cosine_similarity(user_embedding, embeddings)[0]
+    db = get_db_connection()
+    cursor = db.cursor()
 
-    best_index = np.argmax(similarities)
-    best_score = similarities[best_index]
+    cursor.execute("SELECT * FROM users WHERE email = %s OR username = %s",
+                   (hashed_email, hashed_username))
+    if cursor.fetchone():
+        return jsonify({"error": "User already exists!"}), 409
 
-    if best_score >= 0.65:
-        return multimedia_data[best_index]["messages"][1]["content"]
+    cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                   (hashed_username, hashed_email, password))
+    db.commit()
+
+    cursor.close()
+    db.close()
+
+    return jsonify({"message": "Signup successful!"}), 201
+
+# ==============================
+# Login
+# ==============================
+@app.route("/auth/login", methods=["POST"])
+def login():
+    data = request.json
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    hashed_email = hash_text(email) if email else None
+    hashed_username = hash_text(username) if username else None
+
+    if email:
+        cursor.execute("SELECT * FROM users WHERE email=%s", (hashed_email,))
     else:
-        return None
+        cursor.execute("SELECT * FROM users WHERE username=%s", (hashed_username,))
 
+    user = cursor.fetchone()
 
-import openai
-import os
-openai.api_key = os.getenv("openai.api_key")
+    if not user:
+        return jsonify({"error": "User not found!"}), 404
 
+    if not bcrypt.checkpw(password.encode(), user[3].encode()):
+        return jsonify({"error": "Invalid password!"}), 401
 
-chat_history = [
-    {"role": "system", "content": "You are a professional counselor specializing in women's and children's rights in Tamil Nadu. Your role is to provide empathetic, supportive, and legally accurate responses."}
-]
+    identity = email if email else username
+    access_token = create_access_token(identity=identity)
 
+    cursor.close()
+    db.close()
 
+    return jsonify({"access_token": access_token}), 200
 
-from flask_jwt_extended import get_jwt_identity
-from datetime import datetime
-
-def handle_user_input(user_input, multimedia_data, embeddings, model):
-    multimedia_keywords = ["video", "audio", "image"]
-
+# ==============================
+# Chat Logic (NO SentenceTransformer)
+# ==============================
+def handle_user_input(user_input):
     user_identity = get_jwt_identity()
     encrypted_email = hash_text(user_identity)
 
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    try:
-       
-        cursor.execute(
-            "SELECT sender, message FROM chat_history WHERE user_email=%s ORDER BY timestamp ASC",
-            (encrypted_email,)
-        )
-        past_messages = cursor.fetchall()
+    cursor.execute(
+        "SELECT sender, message FROM chat_history WHERE user_email=%s ORDER BY timestamp ASC",
+        (encrypted_email,)
+    )
+    past_messages = cursor.fetchall()
 
-        
-        messages = [
-            {"role": "system", "content": "You are a professional counselor specializing in women's and children's rights in Tamil Nadu. Your role is to provide empathetic, supportive, and legally accurate responses."}
-        ]
-        for msg in past_messages:
-            messages.append({
-                "role": "user" if msg['sender'] == 'user' else "assistant",
-                "content": msg['message']
-            })
+    messages = [
+        {"role": "system", "content": "You are a professional counselor specializing in women's and children's rights in Tamil Nadu."}
+    ]
 
-      
-        messages.append({"role": "user", "content": user_input})
+    for msg in past_messages:
+        messages.append({
+            "role": "user" if msg['sender'] == 'user' else "assistant",
+            "content": msg['message']
+        })
 
-       
-        if any(keyword in user_input.lower() for keyword in multimedia_keywords):
-            response = find_best_multimedia_match(user_input, multimedia_data, embeddings, model)
-            if not response:
-                response = "Sorry, I couldn't find any relevant multimedia content."
-        else:
-            api_response = openai.ChatCompletion.create(
-                model="ft:gpt-3.5-turbo-0125:personal::BFl2VLnL",
-                messages=messages,
-                max_tokens=300
-            )
-            response = api_response['choices'][0]['message']['content'].strip()
+    messages.append({"role": "user", "content": user_input})
 
-       
-        insert_query = "INSERT INTO chat_history (user_email, sender, message, timestamp) VALUES (%s, %s, %s, NOW())"
-        cursor.execute(insert_query, (encrypted_email, "user", user_input))
-        cursor.execute(insert_query, (encrypted_email, "bot", response))
+    api_response = openai.ChatCompletion.create(
+        model="ft:gpt-3.5-turbo-0125:personal::BFl2VLnL",
+        messages=messages,
+        max_tokens=300
+    )
 
+    response = api_response['choices'][0]['message']['content'].strip()
 
-        db.commit()
+    insert_query = "INSERT INTO chat_history (user_email, sender, message, timestamp) VALUES (%s, %s, %s, NOW())"
+    cursor.execute(insert_query, (encrypted_email, "user", user_input))
+    cursor.execute(insert_query, (encrypted_email, "bot", response))
+    db.commit()
 
-        return response
+    cursor.close()
+    db.close()
 
-    except Exception as e:
-        return f"Error handling input: {e}"
+    return response
 
-    finally:
-        cursor.close()
-        db.close()
-
-
-
-multimedia_data = load_multimedia_data('D:\\project-trail\\voice_chatbot_project\\backend\\new_dataset.jsonl')
-model = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = prepare_embeddings(multimedia_data, model)
-
-
-@app.route('/chat', methods=['POST'])
+@app.route("/chat", methods=["POST"])
 @jwt_required()
 def chat():
-    try:
-        data = request.get_json()
-        user_input = data.get("message", "")
-        if not user_input:
-            return jsonify({"error": "No input provided"}), 400
+    data = request.get_json()
+    user_input = data.get("message", "")
+    if not user_input:
+        return jsonify({"error": "No input provided"}), 400
 
-        response = handle_user_input(user_input, multimedia_data, embeddings, model)
-        return jsonify({"response": response})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    response = handle_user_input(user_input)
+    return jsonify({"response": response})
 
-
-
-
-
-
-
-
-
-@app.route("/voice_chat", methods=["POST"])
-@jwt_required()
-def voice_chat():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("🎤 Listening...")
-        recognizer.adjust_for_ambient_noise(source)
-        
-        try:
-            audio = recognizer.listen(source, timeout=5)  # ✅ Timeout added
-            user_text = recognizer.recognize_google(audio).lower()
-            print(f"🗣 Recognized: {user_text}")  # ✅ Debugging line
-            
-           
-            response_text = predefined_responses.get(user_text, "I'm here to help! Please ask anything.")
-
-            #
-            engine = pyttsx3.init()
-            engine.say(response_text)
-            engine.runAndWait()
-
-            return jsonify({"user_text": user_text, "response": response_text})
-        
-        except sr.UnknownValueError:
-            return jsonify({"error": "Could not understand. Please speak clearly."}), 400
-        except sr.RequestError:
-            return jsonify({"error": "Speech recognition service is unavailable."}), 500
-        except Exception as e:
-            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
-
+# ==============================
+# Chat History
+# ==============================
 @app.route("/chat/history", methods=["GET"])
 @jwt_required()
 def chat_history_api():
     user_identity = get_jwt_identity()
-    encrypted_email = hash_text(user_identity)  
+    encrypted_email = hash_text(user_identity)
 
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT sender, message, timestamp FROM chat_history WHERE user_email=%s ORDER BY timestamp ASC", (encrypted_email,))
+    cursor.execute(
+        "SELECT sender, message, timestamp FROM chat_history WHERE user_email=%s ORDER BY timestamp ASC",
+        (encrypted_email,)
+    )
     messages = cursor.fetchall()
 
     cursor.close()
@@ -351,53 +234,19 @@ def chat_history_api():
 
     return jsonify(messages)
 
-@app.route("/healing/<category>", methods=["GET"])
-@jwt_required()
-def healing_content(category):
-    
-    data = {
-        "breathing": {
-            "messageType": "healing_breathing",
-            "title": "Deep Breathing",
-            "text": "Relax and breathe deeply with this GIF.",
-            "gif_url": "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNXZvMGthbDFrOHBha3B6ZmNjMWp1ZDI0dnR3bHQ3ZGc2bDV3bHhiaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/dDXZ3qU5nRBIe82Uit/giphy.gif"
-        },
-        "journaling": {
-            "messageType": "text",
-            "title": "Journaling Prompt",
-            "prompts": [
-                "Write down three things you're grateful for today.",
-                "What made you smile this week?",
-                "Describe a moment you felt proud of yourself."
-            ]
-        },
-        "media": {
-            "messageType": "video",
-            "title": "Peaceful Piano Music",
-            "url": "https://www.youtube.com/embed/1ZYbU82GVz4" 
-        },
-        "meditations": {
-            "messageType": "audio",
-            "title": "Guided Meditation for Anxiety",
-            "url": "https://example.com/guided-meditation.mp3"
-        },
-        "stories": {
-            "messageType": "story",
-            "title": "A Brave Woman's Journey to Justice",
-            "content": "Once upon a time, a woman stood up against injustice..."
-        }
-    }
-
-  
-    return jsonify(data.get(category, {}))
+# ==============================
+# Health Check (Required for Render)
+# ==============================
+@app.route("/healthz")
+def health():
+    return "OK", 200
 
 @app.route("/")
 def home():
-    return "Flask app is running with CORS enabled!"
+    return "Flask app is running!"
 
-
-app.register_blueprint(auth, url_prefix="/auth")  
+app.register_blueprint(auth, url_prefix="/auth")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 
