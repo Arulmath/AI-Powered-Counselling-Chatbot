@@ -7,8 +7,9 @@ openai
 pyttsx3
 SpeechRecognition
 cryptography
-python-dotenv
+python-3.10.13
 sentence-transformers
 scikit-learn
 numpy
+
 gunicorn
