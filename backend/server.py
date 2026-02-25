@@ -30,7 +30,10 @@ openai.api_key = os.getenv("openai.api_key")
 app = Flask(__name__)
 #CORS(app, resources={r"/auth/*": {"origins": "http://localhost:3000"}})
 #CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
-CORS(app, origins="http://localhost:3000")
+CORS(app, origins=[
+    "http://localhost:3000",
+    "https://your-frontend.vercel.app"
+])
 
 # 🔹 JWT Configuration
 app.config["JWT_SECRET_KEY"] = "your_secret_key"
@@ -201,7 +204,7 @@ import openai
 import os
 openai.api_key = os.getenv("openai.api_key")
 
-import openai
+
 chat_history = [
     {"role": "system", "content": "You are a professional counselor specializing in women's and children's rights in Tamil Nadu. Your role is to provide empathetic, supportive, and legally accurate responses."}
 ]
@@ -396,5 +399,5 @@ def home():
 app.register_blueprint(auth, url_prefix="/auth")  
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=5000)
 
