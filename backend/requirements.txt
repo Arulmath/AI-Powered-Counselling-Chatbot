@@ -1,0 +1,14 @@
+Flask
+flask-cors
+flask-jwt-extended
+mysql-connector-python
+bcrypt
+openai
+pyttsx3
+SpeechRecognition
+cryptography
+python-dotenv
+sentence-transformers
+scikit-learn
+numpy
+gunicorn

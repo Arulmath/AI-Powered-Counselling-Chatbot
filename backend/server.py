@@ -16,6 +16,13 @@ import speech_recognition as sr
 import pyttsx3
 import json
 import numpy as np
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # loads .env file
+
+openai.api_key = os.getenv("openai.api_key")
+
 
 # Register blueprint
 
